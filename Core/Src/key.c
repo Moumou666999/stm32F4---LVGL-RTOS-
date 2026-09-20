@@ -27,11 +27,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     /* 判断是哪一个按键 */
     if (GPIO_Pin == KEY1_Pin)
     {
-        event = KEY_1;
+        HAL_Delay(10); // 消抖延时
+        if (HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin) == GPIO_PIN_RESET)
+        {
+            event = KEY_1;
+        }
     }
     else if (GPIO_Pin == KEY2_Pin)
     {
-        event = KEY_2;
+        HAL_Delay(10); // 消抖延时
+        if (HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin) == GPIO_PIN_RESET)
+        {
+            event = KEY_2;
+        }
     }
 
     /* 有效按键事件 */
@@ -39,15 +47,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
         uint8_t next = (key_write + 1) % KEY_QUEUE_SIZE;
 
-        /*
-         * next == key_read
-         * 表示队列满了
-         */
         if (next != key_read)
         {
             key_queue[key_write] = event;
 
-            /* 更新写指针 */
             key_write = next;
         }
     }
