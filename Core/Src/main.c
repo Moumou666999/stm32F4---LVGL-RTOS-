@@ -27,6 +27,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "led.h"
+#include "key.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,9 +105,16 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    LED_Toggle(GPIOC, GPIO_PIN_13);
-    HAL_Delay(1000);
     /* USER CODE BEGIN 3 */
+    KeyEvent_t event = Key_GetEvent();
+    if (event == KEY_1)
+    {
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+    }
+    else if (event == KEY_2)
+    {
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+    }
   }
   /* USER CODE END 3 */
 }
