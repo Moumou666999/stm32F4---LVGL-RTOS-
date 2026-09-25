@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "rtc.h"
 #include "spi.h"
 #include "usart.h"
@@ -28,6 +29,7 @@
 /* USER CODE BEGIN Includes */
 #include "led.h"
 #include "key.h"
+#define RX_BUFFER_SIZE 100 // 串口接收缓冲区大小
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,7 +61,9 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint8_t rx_buffer[100];
+uint16_t size = 0;
+uint8_t Rxflag = 0; // 接收完成标志
 /* USER CODE END 0 */
 
 /**
@@ -91,12 +95,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_SPI3_Init();
   MX_RTC_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE); // 启动DMA接收
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -105,15 +110,26 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
     KeyEvent_t event = Key_GetEvent();
     if (event == KEY_1)
     {
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+      HAL_UART_Transmit_DMA(&huart1, (uint8_t *)"KEY_1 Pressed\r\n", 15);
+      // HAL_UART_Transmit(&huart1, (uint8_t *)"KEY_1 Pressed\r\n", 15, 1000);
     }
     else if (event == KEY_2)
     {
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+      HAL_UART_Transmit_DMA(&huart1, (uint8_t *)"KEY_2 Pressed\r\n", 15);
+      // HAL_UART_Transmit(&huart1, (uint8_t *)"KEY_2 Pressed\r\n", 15, 1000);
+    }
+    if (Rxflag)
+    {
+      Rxflag = 0;                                      // 清除接收完成标志
+      HAL_UART_Transmit_DMA(&huart1, rx_buffer, size); // 发送接收到的数据
+      // HAL_UART_Transmit(&huart1, rx_buffer, strlen((char *)rx_buffer), 1000); //发送接收到的数据
     }
   }
   /* USER CODE END 3 */
@@ -165,7 +181,23 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+{
+  if (huart->Instance == USART1)
+  {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13); // 切换LED状态
+    if (Rxflag == 0)
+    {
+      Rxflag = 1; // 设置接收完成标志
+      if (Size < RX_BUFFER_SIZE)
+      {
+        rx_buffer[Size] = '\0'; // 在接收数据末尾添加字符串结束符
+        size = Size;            // 保存接收数据的长度
+      }
+    }
+    HAL_UARTEx_ReceiveToIdle_DMA(huart, rx_buffer, RX_BUFFER_SIZE); // 重新启动DMA接收
+  }
+}
 /* USER CODE END 4 */
 
 /**
