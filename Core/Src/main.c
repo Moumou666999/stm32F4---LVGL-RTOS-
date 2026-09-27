@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
+#include "i2c.h"
 #include "rtc.h"
 #include "spi.h"
 #include "usart.h"
@@ -29,7 +30,10 @@
 /* USER CODE BEGIN Includes */
 #include "led.h"
 #include "key.h"
-#define RX_BUFFER_SIZE 100 // 串口接收缓冲区大小
+#include "sht30.h"
+#include "stdio.h"
+#include "stdarg.h"
+#define RX_BUFFER_SIZE 100
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,7 +67,11 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 uint8_t rx_buffer[100];
 uint16_t size = 0;
-uint8_t Rxflag = 0; // 接收完成标志
+uint8_t Rxflag = 0;
+
+Sht30Data sht30_data;
+uint16_t system_time = 0; // ms
+uint16_t last_time = 0;   // ms
 /* USER CODE END 0 */
 
 /**
@@ -100,13 +108,15 @@ int main(void)
   MX_SPI3_Init();
   MX_RTC_Init();
   MX_USB_DEVICE_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE); // 启动DMA接收
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
+  int printf_dma(const char *fmt, ...);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+  // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
   while (1)
   {
     /* USER CODE END WHILE */
@@ -127,9 +137,28 @@ int main(void)
     }
     if (Rxflag)
     {
-      Rxflag = 0;                                      // 清除接收完成标志
+      Rxflag = 0;                                      // 清除接收标志
       HAL_UART_Transmit_DMA(&huart1, rx_buffer, size); // 发送接收到的数据
-      // HAL_UART_Transmit(&huart1, rx_buffer, strlen((char *)rx_buffer), 1000); //发送接收到的数据
+      // HAL_UART_Transmit(&huart1, rx_buffer, strlen((char *)rx_buffer), 1000); // 发送接收到的数据
+    }
+
+    system_time = HAL_GetTick();         // 获取系统时间
+    if (system_time - last_time >= 1500) // 每隔1秒更新一次数据
+    {
+      last_time = system_time;
+      sht30_data = Sht30_Getdata();
+      printf_dma("Temperature: %.1f C, Humidity: %.1f %%\r\n", sht30_data.temp, sht30_data.humi);
+      if (sht30_data.temp == 0.0f && sht30_data.humi == 0.0f)
+      {
+        if (Sht30_Reset()) // 重置SHT30传感器
+        {
+          printf_dma("SHT30 Reset Failed\r\n");
+        }
+        else
+        {
+          printf_dma("SHT30 Reset Successful\r\n");
+        }
+      }
     }
   }
   /* USER CODE END 3 */
@@ -188,15 +217,32 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13); // 切换LED状态
     if (Rxflag == 0)
     {
-      Rxflag = 1; // 设置接收完成标志
+      Rxflag = 1; // 设置接收标志
       if (Size < RX_BUFFER_SIZE)
       {
         rx_buffer[Size] = '\0'; // 在接收数据末尾添加字符串结束符
-        size = Size;            // 保存接收数据的长度
+        size = Size;            // 记录接收到的数据长度
       }
     }
-    HAL_UARTEx_ReceiveToIdle_DMA(huart, rx_buffer, RX_BUFFER_SIZE); // 重新启动DMA接收
+    HAL_UARTEx_ReceiveToIdle_DMA(huart, rx_buffer, RX_BUFFER_SIZE); // 开始新的DMA接收
   }
+}
+
+int printf_dma(const char *fmt, ...)
+{
+  static char buffer[128]; // 缓冲区大小根据需要调整
+  va_list args;
+  va_start(args, fmt);
+  int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+  va_end(args);
+  while (HAL_UART_GetState(&huart1) == HAL_UART_STATE_BUSY_TX)
+    ;
+  if (len > 0)
+  {
+    HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer, len);
+  }
+
+  return len;
 }
 /* USER CODE END 4 */
 
