@@ -62,6 +62,12 @@ void Error_Handler(void);
 #define KEY2_EXTI_IRQn EXTI9_5_IRQn
 #define UserLED_Pin GPIO_PIN_13
 #define UserLED_GPIO_Port GPIOC
+#define LCD_CS_Pin GPIO_PIN_11
+#define LCD_CS_GPIO_Port GPIOD
+#define LCD_DC_Pin GPIO_PIN_12
+#define LCD_DC_GPIO_Port GPIOD
+#define LCD_BL_Pin GPIO_PIN_13
+#define LCD_BL_GPIO_Port GPIOD
 #define KEY1_Pin GPIO_PIN_15
 #define KEY1_GPIO_Port GPIOA
 #define KEY1_EXTI_IRQn EXTI15_10_IRQn

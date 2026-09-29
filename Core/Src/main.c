@@ -33,6 +33,11 @@
 #include "sht30.h"
 #include "stdio.h"
 #include "stdarg.h"
+#include "lvgl.h"
+#include "lv_port_indev.h"
+#include "lv_port_lcd_stm32.h"
+// #include "lv_demos.h"
+#include "../lvgl/demos/lv_demos.h"
 #define RX_BUFFER_SIZE 100
 /* USER CODE END Includes */
 
@@ -112,7 +117,13 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
   int printf_dma(const char *fmt, ...);
-  HAL_TIM_Base_Start(&htim6); // Æô¶¯¶¨Ê±Æ÷
+  HAL_TIM_Base_Start(&htim6);
+  lv_init();
+  lv_tick_set_cb(HAL_GetTick);
+  lv_port_disp_init();
+  // lv_port_indev_init();
+
+  lv_demo_widgets();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -120,48 +131,44 @@ int main(void)
   // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
   while (1)
   {
+    uint32_t tick = lv_timer_handler();
+    HAL_Delay(tick);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    KeyEvent_t event = Key_GetEvent();
-    if (event == KEY_1)
-    {
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-      HAL_UART_Transmit_DMA(&huart1, (uint8_t *)"KEY_1 Pressed\r\n", 15);
-      // HAL_UART_Transmit(&huart1, (uint8_t *)"KEY_1 Pressed\r\n", 15, 1000);
-    }
-    else if (event == KEY_2)
-    {
-      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
-      HAL_UART_Transmit_DMA(&huart1, (uint8_t *)"KEY_2 Pressed\r\n", 15);
-      // HAL_UART_Transmit(&huart1, (uint8_t *)"KEY_2 Pressed\r\n", 15, 1000);
-    }
-    if (Rxflag)
-    {
-      Rxflag = 0;
-      HAL_UART_Transmit_DMA(&huart1, rx_buffer, size);
-      // HAL_UART_Transmit(&huart1, rx_buffer, strlen((char *)rx_buffer), 1000);
-    }
 
+    // KeyEvent_t event = Key_GetEvent();
+    // if (event == KEY_1)
+    // {
+    //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+    //   HAL_UART_Transmit_DMA(&huart1, (uint8_t *)"KEY_1 Pressed\r\n", 15);
+    //   // HAL_UART_Transmit(&huart1, (uint8_t *)"KEY_1 Pressed\r\n", 15, 1000);
+    // }
+    // else if (event == KEY_2)
+    // {
+    //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+    //   HAL_UART_Transmit_DMA(&huart1, (uint8_t *)"KEY_2 Pressed\r\n", 15);
+    //   // HAL_UART_Transmit(&huart1, (uint8_t *)"KEY_2 Pressed\r\n", 15, 1000);
+    // }
+    // if (Rxflag)
+    // {
+    //   Rxflag = 0;
+    //   HAL_UART_Transmit_DMA(&huart1, rx_buffer, size);
+    //   // HAL_UART_Transmit(&huart1, rx_buffer, strlen((char *)rx_buffer), 1000);
+    // }
+
+    // system_time = HAL_GetTick();
+    // if (system_time - last_time >= 1500)
+    // {
+    //   last_time = system_time;
+    //   sht30_data = Sht30_Getdata();
+    //   printf_dma("Temperature: %.1f C, Humidity: %.1f %%\r\n", sht30_data.temp, sht30_data.humi);
+
+    // }
     system_time = HAL_GetTick();
     if (system_time - last_time >= 1500)
     {
-      last_time = system_time;
-      sht30_data = Sht30_Getdata();
-      printf_dma("Temperature: %.1f C, Humidity: %.1f %%\r\n", sht30_data.temp, sht30_data.humi);
-      // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-      // HAL_Delay(500);
-      // if (sht30_data.temp == 0.0f && sht30_data.humi == 0.0f)
-      // {
-      //   if (Sht30_Reset())
-      //   {
-      //     printf_dma("SHT30 Reset Failed\r\n");
-      //   }
-      //   else
-      //   {
-      //     printf_dma("SHT30 Reset Successful\r\n");
-      //   }
-      //  }
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     }
   }
   /* USER CODE END 3 */
