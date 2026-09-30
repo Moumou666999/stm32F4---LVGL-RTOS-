@@ -23,16 +23,6 @@
 #define MY_DISP_HOR_RES 240
 #define MY_DISP_VER_RES 320
 
-#ifndef MY_DISP_HOR_RES
-#warning Please define or replace the macro MY_DISP_HOR_RES with the actual screen width, default value 320 is used for now.
-#define MY_DISP_HOR_RES 320
-#endif
-
-#ifndef MY_DISP_VER_RES
-#warning Please define or replace the macro MY_DISP_VER_RES with the actual screen height, default value 240 is used for now.
-#define MY_DISP_VER_RES 240
-#endif
-
 #define BUS_SPI1_POLL_TIMEOUT 0x1000U
 
 /**********************
@@ -71,8 +61,8 @@ void lv_port_disp_init(void)
 
     /* Create the LVGL display object and the ST7789 LCD display driver */
     lcd_disp = lv_ili9341_create(MY_DISP_HOR_RES, MY_DISP_VER_RES, LV_LCD_FLAG_NONE, lcd_send_cmd, lcd_send_color);
-    lv_display_set_rotation(lcd_disp, LV_DISPLAY_ROTATION_0); /* set landscape orientation */
-    lv_lcd_generic_mipi_set_invert(lcd_disp, true);
+    lv_display_set_rotation(lcd_disp, LV_DISPLAY_ROTATION_180); /* set landscape orientation */
+    lv_lcd_generic_mipi_set_invert(lcd_disp, false);
 
     /* Example: two dynamically allocated buffers for partial rendering */
     // uint8_t * buf1 = NULL;

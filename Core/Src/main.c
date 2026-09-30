@@ -120,12 +120,53 @@ int main(void)
   HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
   int printf_dma(const char *fmt, ...);
   HAL_TIM_Base_Start(&htim6);
+
   lv_init();
   lv_tick_set_cb(HAL_GetTick);
   lv_port_disp_init();
   lv_port_indev_init();
 
-  lv_demo_widgets();
+  // lv_demo_widgets();
+  /* 1. 获取当前屏幕分辨率 */
+  lv_coord_t hor_res = lv_disp_get_hor_res(NULL);
+  lv_coord_t ver_res = lv_disp_get_ver_res(NULL);
+  lv_coord_t part_h = ver_res / 3;
+
+  /* 2. 创建新屏幕 */
+  lv_obj_t *scr = lv_obj_create(NULL);
+  lv_obj_set_style_pad_all(scr, 0, LV_PART_MAIN);
+  lv_obj_set_style_border_width(scr, 0, LV_PART_MAIN);
+
+  /* ================= 顶部：纯红 ================= */
+  lv_obj_t *top_obj = lv_obj_create(scr);
+  lv_obj_set_size(top_obj, hor_res, part_h);
+  lv_obj_set_pos(top_obj, 0, 0);
+  lv_obj_set_style_bg_color(top_obj, lv_color_hex(0xFF0000), LV_PART_MAIN); // 红
+  lv_obj_set_style_radius(top_obj, 0, LV_PART_MAIN);
+  lv_obj_set_style_border_width(top_obj, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(top_obj, LV_OBJ_FLAG_SCROLLABLE);
+
+  /* ================= 中间：纯绿 ================= */
+  lv_obj_t *mid_obj = lv_obj_create(scr);
+  lv_obj_set_size(mid_obj, hor_res, part_h);
+  lv_obj_set_pos(mid_obj, 0, part_h);
+  lv_obj_set_style_bg_color(mid_obj, lv_color_hex(0x00FF00), LV_PART_MAIN); // 绿
+  lv_obj_set_style_radius(mid_obj, 0, LV_PART_MAIN);
+  lv_obj_set_style_border_width(mid_obj, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(mid_obj, LV_OBJ_FLAG_SCROLLABLE);
+
+  /* ================= 底部：纯蓝 ================= */
+  lv_obj_t *bot_obj = lv_obj_create(scr);
+  lv_obj_set_size(bot_obj, hor_res, ver_res - 2 * part_h); // 补齐剩余高度
+  lv_obj_set_pos(bot_obj, 0, 2 * part_h);
+  lv_obj_set_style_bg_color(bot_obj, lv_color_hex(0x0000FF), LV_PART_MAIN); // 蓝
+  lv_obj_set_style_radius(bot_obj, 0, LV_PART_MAIN);
+  lv_obj_set_style_border_width(bot_obj, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(bot_obj, LV_OBJ_FLAG_SCROLLABLE);
+
+  /* 3. 加载屏幕 */
+  lv_scr_load(scr);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,7 +175,10 @@ int main(void)
   while (1)
   {
     uint32_t tick = lv_timer_handler();
-    HAL_Delay(tick);
+    HAL_Delay(tick > 0 ? tick : 1);
+    // HAL_Delay(5);
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    // HAL_Delay(500);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -167,11 +211,11 @@ int main(void)
     //   printf_dma("Temperature: %.1f C, Humidity: %.1f %%\r\n", sht30_data.temp, sht30_data.humi);
 
     // }
-    system_time = HAL_GetTick();
-    if (system_time - last_time >= 1500)
-    {
-      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    }
+    // system_time = HAL_GetTick();
+    // if (system_time - last_time >= 1500)
+    // {
+    //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    // }
   }
   /* USER CODE END 3 */
 }
