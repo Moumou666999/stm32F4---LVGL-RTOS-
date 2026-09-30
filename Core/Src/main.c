@@ -114,6 +114,8 @@ int main(void)
   MX_RTC_Init();
   MX_USB_DEVICE_Init();
   MX_TIM6_Init();
+  MX_SPI1_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
   int printf_dma(const char *fmt, ...);
@@ -121,7 +123,7 @@ int main(void)
   lv_init();
   lv_tick_set_cb(HAL_GetTick);
   lv_port_disp_init();
-  // lv_port_indev_init();
+  lv_port_indev_init();
 
   lv_demo_widgets();
   /* USER CODE END 2 */

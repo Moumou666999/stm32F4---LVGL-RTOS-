@@ -15,13 +15,13 @@
 */
 
 #include "lv_port_lcd_stm32.h"
-#include "./src/drivers/display/st7789/lv_st7789.h"
+#include "./src/drivers/display/ili9341/lv_ili9341.h"
 #include "spi.h"
 /*********************
  *      DEFINES
  *********************/
 #define MY_DISP_HOR_RES 240
-#define MY_DISP_VER_RES 240
+#define MY_DISP_VER_RES 320
 
 #ifndef MY_DISP_HOR_RES
 #warning Please define or replace the macro MY_DISP_HOR_RES with the actual screen width, default value 320 is used for now.
@@ -70,7 +70,7 @@ void lv_port_disp_init(void)
         return;
 
     /* Create the LVGL display object and the ST7789 LCD display driver */
-    lcd_disp = lv_st7789_create(MY_DISP_HOR_RES, MY_DISP_VER_RES, LV_LCD_FLAG_NONE, lcd_send_cmd, lcd_send_color);
+    lcd_disp = lv_ili9341_create(MY_DISP_HOR_RES, MY_DISP_VER_RES, LV_LCD_FLAG_NONE, lcd_send_cmd, lcd_send_color);
     lv_display_set_rotation(lcd_disp, LV_DISPLAY_ROTATION_0); /* set landscape orientation */
     lv_lcd_generic_mipi_set_invert(lcd_disp, true);
 
@@ -116,16 +116,17 @@ static void lcd_color_transfer_ready_cb(SPI_HandleTypeDef *hspi)
 static int32_t lcd_io_init(void)
 {
     /* Register SPI Tx Complete Callback */
-    HAL_SPI_RegisterCallback(&hspi3, HAL_SPI_TX_COMPLETE_CB_ID, lcd_color_transfer_ready_cb);
+    HAL_SPI_RegisterCallback(&hspi1, HAL_SPI_TX_COMPLETE_CB_ID, lcd_color_transfer_ready_cb);
+
+    HAL_GPIO_WritePin(LCD_BL_GPIO_Port, LCD_BL_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
 
     /* reset LCD */
-    // HAL_GPIO_WritePin(LCD_RESET_GPIO_Port, LCD_RESET_Pin, GPIO_PIN_RESET);
-    // HAL_Delay(100);
-    // HAL_GPIO_WritePin(LCD_RESET_GPIO_Port, LCD_RESET_Pin, GPIO_PIN_SET);
-    // HAL_Delay(100);
-    HAL_GPIO_WritePin(LCD_BL_GPIO_Port, LCD_BL_Pin, GPIO_PIN_SET);
-
+    HAL_GPIO_WritePin(LCD_RESET_GPIO_Port, LCD_RESET_Pin, GPIO_PIN_RESET);
     HAL_Delay(100);
+    HAL_GPIO_WritePin(LCD_RESET_GPIO_Port, LCD_RESET_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
+    // HAL_GPIO_WritePin(LCD_BL_GPIO_Port, LCD_BL_Pin, GPIO_PIN_SET);
 
     HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_SET);
@@ -141,19 +142,19 @@ static void lcd_send_cmd(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size
     while (lcd_bus_busy)
         ; /* wait until previous transfer is finished */
     /* Set the SPI in 8-bit mode */
-    hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
-    HAL_SPI_Init(&hspi3);
+    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+    HAL_SPI_Init(&hspi1);
     /* DCX low (command) */
     HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_RESET);
     /* CS low */
     HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);
     /* send command */
-    if (HAL_SPI_Transmit(&hspi3, cmd, cmd_size, BUS_SPI1_POLL_TIMEOUT) == HAL_OK)
+    if (HAL_SPI_Transmit(&hspi1, cmd, cmd_size, BUS_SPI1_POLL_TIMEOUT) == HAL_OK)
     {
         /* DCX high (data) */
         HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_SET);
         /* for short data blocks we use polling transfer */
-        HAL_SPI_Transmit(&hspi3, (uint8_t *)param, (uint16_t)param_size, BUS_SPI1_POLL_TIMEOUT);
+        HAL_SPI_Transmit(&hspi1, (uint8_t *)param, (uint16_t)param_size, BUS_SPI1_POLL_TIMEOUT);
         /* CS high */
         HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
     }
@@ -169,23 +170,23 @@ static void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_si
     while (lcd_bus_busy)
         ; /* wait until previous transfer is finished */
     /* Set the SPI in 8-bit mode */
-    hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
-    HAL_SPI_Init(&hspi3);
+    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+    HAL_SPI_Init(&hspi1);
     /* DCX low (command) */
     HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_RESET);
     /* CS low */
     HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);
     /* send command */
-    if (HAL_SPI_Transmit(&hspi3, cmd, cmd_size, BUS_SPI1_POLL_TIMEOUT) == HAL_OK)
+    if (HAL_SPI_Transmit(&hspi1, cmd, cmd_size, BUS_SPI1_POLL_TIMEOUT) == HAL_OK)
     {
         /* DCX high (data) */
         HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_SET);
         /* for color data use DMA transfer */
         /* Set the SPI in 16-bit mode to match endianness */
-        hspi3.Init.DataSize = SPI_DATASIZE_16BIT;
-        HAL_SPI_Init(&hspi3);
+        hspi1.Init.DataSize = SPI_DATASIZE_16BIT;
+        HAL_SPI_Init(&hspi1);
         lcd_bus_busy = 1;
-        HAL_SPI_Transmit_DMA(&hspi3, param, (uint16_t)param_size / 2);
+        HAL_SPI_Transmit_DMA(&hspi1, param, (uint16_t)param_size / 2);
         /* NOTE: CS will be reset in the transfer ready callback */
     }
 }
