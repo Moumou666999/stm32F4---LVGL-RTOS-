@@ -38,7 +38,8 @@
 #include "lv_port_lcd_stm32.h"
 // #include "lv_demos.h"
 #include "../lvgl/demos/lv_demos.h"
-#include "xpt2046.h" //���Դ���������
+#include "xpt2046.h" //
+#include "mq2.h"     //
 #define RX_BUFFER_SIZE 100
 /* USER CODE END Includes */
 
@@ -117,16 +118,17 @@ int main(void)
   MX_TIM6_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
   int printf_dma(const char *fmt, ...);
   HAL_TIM_Base_Start(&htim6);
 
-  lv_init();
-  lv_tick_set_cb(HAL_GetTick);
-  lv_port_disp_init();
-  lv_port_indev_init();
-  lv_demo_widgets();
+  // lv_init();
+  // lv_tick_set_cb(HAL_GetTick);
+  // lv_port_disp_init();
+  // lv_port_indev_init();
+  // lv_demo_widgets();
 
   /* USER CODE END 2 */
 
@@ -135,8 +137,11 @@ int main(void)
   // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
   while (1)
   {
-    uint32_t tick = lv_timer_handler();
-    HAL_Delay(tick > 0 ? tick : 1);
+    float mq2_ppm = MQ2_Getppm();
+    printf_dma("PPM: %0.2f\r\n", mq2_ppm);
+    HAL_Delay(500);
+    // uint32_t tick = lv_timer_handler();
+    // HAL_Delay(tick > 0 ? tick : 1);
     // HAL_Delay(5);
     // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     // HAL_Delay(500);
