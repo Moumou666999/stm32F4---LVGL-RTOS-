@@ -144,8 +144,37 @@ static void touchpad_get_xy(int32_t *x, int32_t *y)
 {
     /*Your code comes here*/
 
-    (*x) = (Touchpad_ReadRawX() * 240 / (RAW_X_MAX - RAW_X_MIN));
-    (*y) = (320 - (Touchpad_ReadRawY() * 320 / (RAW_Y_MAX - RAW_Y_MIN)));
+    uint16_t buf_x[5], buf_y[5];
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        buf_x[i] = Touchpad_ReadRawX();
+        buf_y[i] = Touchpad_ReadRawY();
+    }
+
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        for (uint8_t j = 0; j < 4 - i; j++)
+        {
+            if (buf_x[j] > buf_x[j + 1])
+            {
+                uint16_t t = buf_x[j];
+                buf_x[j] = buf_x[j + 1];
+                buf_x[j + 1] = t;
+            }
+            if (buf_y[j] > buf_y[j + 1])
+            {
+                uint16_t t = buf_y[j];
+                buf_y[j] = buf_y[j + 1];
+                buf_y[j + 1] = t;
+            }
+        }
+    }
+
+    uint16_t raw_x = (buf_x[1] + buf_x[2] + buf_x[3]) / 3;
+    uint16_t raw_y = (buf_y[1] + buf_y[2] + buf_y[3]) / 3;
+
+    (*x) = (raw_x * 240 / (RAW_X_MAX - RAW_X_MIN));
+    (*y) = (320 - (raw_y * 320 / (RAW_Y_MAX - RAW_Y_MIN)));
 }
 
 /*------------------

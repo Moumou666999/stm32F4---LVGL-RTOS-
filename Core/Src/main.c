@@ -126,7 +126,6 @@ int main(void)
   lv_tick_set_cb(HAL_GetTick);
   lv_port_disp_init();
   lv_port_indev_init();
-  //  Touchpad_Init();
   lv_demo_widgets();
 
   /* USER CODE END 2 */
