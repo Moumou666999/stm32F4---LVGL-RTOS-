@@ -38,6 +38,7 @@
 #include "lv_port_lcd_stm32.h"
 // #include "lv_demos.h"
 #include "../lvgl/demos/lv_demos.h"
+#include "xpt2046.h" //ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #define RX_BUFFER_SIZE 100
 /* USER CODE END Includes */
 
@@ -125,47 +126,8 @@ int main(void)
   lv_tick_set_cb(HAL_GetTick);
   lv_port_disp_init();
   lv_port_indev_init();
-
-  // lv_demo_widgets();
-  /* 1. »ñÈ¡µ±Ç°ÆÁÄ»·Ö±æÂÊ */
-  lv_coord_t hor_res = lv_disp_get_hor_res(NULL);
-  lv_coord_t ver_res = lv_disp_get_ver_res(NULL);
-  lv_coord_t part_h = ver_res / 3;
-
-  /* 2. ´´½¨ÐÂÆÁÄ» */
-  lv_obj_t *scr = lv_obj_create(NULL);
-  lv_obj_set_style_pad_all(scr, 0, LV_PART_MAIN);
-  lv_obj_set_style_border_width(scr, 0, LV_PART_MAIN);
-
-  /* ================= ¶¥²¿£º´¿ºì ================= */
-  lv_obj_t *top_obj = lv_obj_create(scr);
-  lv_obj_set_size(top_obj, hor_res, part_h);
-  lv_obj_set_pos(top_obj, 0, 0);
-  lv_obj_set_style_bg_color(top_obj, lv_color_hex(0xFF0000), LV_PART_MAIN); // ºì
-  lv_obj_set_style_radius(top_obj, 0, LV_PART_MAIN);
-  lv_obj_set_style_border_width(top_obj, 0, LV_PART_MAIN);
-  lv_obj_clear_flag(top_obj, LV_OBJ_FLAG_SCROLLABLE);
-
-  /* ================= ÖÐ¼ä£º´¿ÂÌ ================= */
-  lv_obj_t *mid_obj = lv_obj_create(scr);
-  lv_obj_set_size(mid_obj, hor_res, part_h);
-  lv_obj_set_pos(mid_obj, 0, part_h);
-  lv_obj_set_style_bg_color(mid_obj, lv_color_hex(0x00FF00), LV_PART_MAIN); // ÂÌ
-  lv_obj_set_style_radius(mid_obj, 0, LV_PART_MAIN);
-  lv_obj_set_style_border_width(mid_obj, 0, LV_PART_MAIN);
-  lv_obj_clear_flag(mid_obj, LV_OBJ_FLAG_SCROLLABLE);
-
-  /* ================= µ×²¿£º´¿À¶ ================= */
-  lv_obj_t *bot_obj = lv_obj_create(scr);
-  lv_obj_set_size(bot_obj, hor_res, ver_res - 2 * part_h); // ²¹ÆëÊ£Óà¸ß¶È
-  lv_obj_set_pos(bot_obj, 0, 2 * part_h);
-  lv_obj_set_style_bg_color(bot_obj, lv_color_hex(0x0000FF), LV_PART_MAIN); // À¶
-  lv_obj_set_style_radius(bot_obj, 0, LV_PART_MAIN);
-  lv_obj_set_style_border_width(bot_obj, 0, LV_PART_MAIN);
-  lv_obj_clear_flag(bot_obj, LV_OBJ_FLAG_SCROLLABLE);
-
-  /* 3. ¼ÓÔØÆÁÄ» */
-  lv_scr_load(scr);
+  //  Touchpad_Init();
+  lv_demo_widgets();
 
   /* USER CODE END 2 */
 
@@ -179,6 +141,13 @@ int main(void)
     // HAL_Delay(5);
     // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     // HAL_Delay(500);
+    // if (Touchpad_IsPressed())
+    // {
+    //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    //   printf_dma("Touchpad Pressed: X=%d, Y=%d\r\n", (Touchpad_ReadRawX() * 240 / (RAW_X_MAX - RAW_X_MIN)),
+    //              (Touchpad_ReadRawY() * 320 / (RAW_Y_MAX - RAW_Y_MIN)));
+    //   HAL_Delay(100);
+    // }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -300,6 +269,7 @@ int printf_dma(const char *fmt, ...)
 
   return len;
 }
+
 /* USER CODE END 4 */
 
 /**
