@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "dma.h"
 #include "rtc.h"
 #include "spi.h"
@@ -31,15 +32,16 @@
 #include "led.h"
 #include "key.h"
 #include "sht30.h"
-#include "stdio.h"
-#include "stdarg.h"
-#include "lvgl.h"
-#include "lv_port_indev.h"
-#include "lv_port_lcd_stm32.h"
-// #include "lv_demos.h"
-#include "../lvgl/demos/lv_demos.h"
-#include "xpt2046.h" //
-#include "mq2.h"     //
+
+// #include "lvgl.h"
+// #include "lv_port_indev.h"
+// #include "lv_port_lcd_stm32.h"
+// #include "../lvgl/demos/lv_demos.h"
+#include "xpt2046.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "mq2.h"
+#include "freertos_demo.h"
 #define RX_BUFFER_SIZE 100
 /* USER CODE END Includes */
 
@@ -121,7 +123,6 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
-  int printf_dma(const char *fmt, ...);
   HAL_TIM_Base_Start(&htim6);
 
   // lv_init();
@@ -134,12 +135,18 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+  for (int i = 0; i < 10; i++)
+  {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    HAL_Delay(500);
+  }
+  freertos_start();
+  //  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
   while (1)
   {
-    float mq2_ppm = MQ2_Getppm();
-    printf_dma("PPM: %0.2f\r\n", mq2_ppm);
-    HAL_Delay(500);
+    // float mq2_ppm = MQ2_Getppm();
+    // printf_dma("PPM: %0.2f\r\n", mq2_ppm);
+    // HAL_Delay(500);
     // uint32_t tick = lv_timer_handler();
     // HAL_Delay(tick > 0 ? tick : 1);
     // HAL_Delay(5);
@@ -243,7 +250,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
   if (huart->Instance == USART1)
   {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13); // �л�LED״̬
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     if (Rxflag == 0)
     {
       Rxflag = 1; //
@@ -257,24 +264,51 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
   }
 }
 
-int printf_dma(const char *fmt, ...)
+void vApplicationIdleHook(void)
 {
-  static char buffer[128]; //
-  va_list args;
-  va_start(args, fmt);
-  int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
-  va_end(args);
-  while (HAL_UART_GetState(&huart1) == HAL_UART_STATE_BUSY_TX)
-    ;
-  if (len > 0)
-  {
-    HAL_UART_Transmit_DMA(&huart1, (uint8_t *)buffer, len);
-  }
+}
 
-  return len;
+void vApplicationTickHook(void)
+{
+}
+
+void vApplicationMallocFailedHook(void)
+{
+  taskDISABLE_INTERRUPTS();
+  for (;;)
+    ;
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+  taskDISABLE_INTERRUPTS();
+  for (;;)
+    ;
 }
 
 /* USER CODE END 4 */
+
+/**
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM7 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM7)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
  * @brief  This function is executed in case of error occurrence.

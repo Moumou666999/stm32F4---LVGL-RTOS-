@@ -21,7 +21,6 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -120,7 +119,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart1_tx);
 
     /* USART1 interrupt Init */
-    HAL_NVIC_SetPriority(USART1_IRQn, 3, 0);
+    HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspInit 1 */
 
@@ -158,6 +157,21 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
+int printf_dma(const char *fmt, ...)
+{
+  static char buffer[128];
+  va_list args;
+  int len;
 
+  va_start(args, fmt);
+  len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+  va_end(args);
+
+  if (len > 0)
+  {
+    HAL_UART_Transmit(&huart1, (uint8_t *)buffer, len, 100);
+  }
+  return len;
+}
 /* USER CODE END 1 */
 
