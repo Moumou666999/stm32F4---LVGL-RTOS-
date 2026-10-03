@@ -3,6 +3,10 @@
 #include "led.h"
 #include "key.h"
 #include "usart.h"
+#include "xpt2046.h"
+#include "lvgl.h"
+#include "lv_port_indev.h"
+#include "lv_port_lcd_stm32.h"
 
 #define START_TASK_STACK 256
 #define START_TASK_PRIORITY 5
@@ -23,6 +27,11 @@ void task2(void *pvParameters);
 #define TASK3_PRIORITY 3
 TaskHandle_t task3_handle;
 void task3(void *pvParameters);
+
+#define LVGL_STACK 2048
+#define LVGL_PRIORITY 1
+TaskHandle_t lvgl_task_handle;
+void lvgl_task(void *pvParameters);
 
 void freertos_start(void)
 {
@@ -60,6 +69,13 @@ void start_task(void *pvParameters)
                 (void *)NULL,
                 (UBaseType_t)TASK3_PRIORITY,
                 (TaskHandle_t *)&task3_handle);
+
+    xTaskCreate((TaskFunction_t)lvgl_task,
+                (char *)"lvgl_task",
+                (configSTACK_DEPTH_TYPE)LVGL_STACK,
+                (void *)NULL,
+                (UBaseType_t)LVGL_PRIORITY,
+                (TaskHandle_t *)&lvgl_task_handle);
 
     vTaskDelete(NULL);
     taskEXIT_CRITICAL();
@@ -105,5 +121,25 @@ void task3(void *pvParameters)
         }
         printf_dma("Task 3 is running\n");
         vTaskDelay(1000);
+    }
+}
+
+void lvgl_task(void *pvParameters)
+{
+    lv_init();
+    lv_tick_set_cb(xTaskGetTickCount);
+    lv_port_disp_init();
+    lv_port_indev_init();
+    lv_obj_t *label = lv_label_create(lv_scr_act());
+    lv_label_set_text(label, "Hello FreeRTOS + LVGL");
+    lv_obj_center(label);
+    //  printf_dma("LVGL task is ok\n");
+    while (1)
+    {
+        // printf_dma("LVGL task is running\n");
+        uint32_t t1 = xTaskGetTickCount();
+        lv_task_handler();
+        printf_dma("LVGL handler: %lu ms\r\n", t1);
+        vTaskDelay(5); // 5ms Ë¢ÐÂÒ»´Î
     }
 }
