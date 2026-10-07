@@ -12,14 +12,15 @@
 #include "mq2.h"
 #include "queue.h"
 #include "semphr.h"
+#include "ui.h"
 
 #define START_TASK_STACK 256
-#define START_TASK_PRIORITY 5
+#define START_TASK_PRIORITY 6
 TaskHandle_t start_task_handle;
 void start_task(void *pvParameters);
 
-#define SENSOR_STACK 256
-#define SENSOR_PRIORITY 4
+#define SENSOR_STACK 512
+#define SENSOR_PRIORITY 3
 TaskHandle_t sensor_task_handle;
 void sensor_task(void *pvParameters);
 
@@ -29,17 +30,17 @@ TaskHandle_t mqtt_pub_task_handle;
 void mqtt_pub_task(void *pvParameters);
 
 #define TASK3_STACK 256
-#define TASK3_PRIORITY 3
+#define TASK3_PRIORITY 4
 TaskHandle_t task3_handle;
 void task3(void *pvParameters);
 
-#define LVGL_STACK 2048
-#define LVGL_PRIORITY 1
+#define LVGL_STACK 4096
+#define LVGL_PRIORITY 3
 TaskHandle_t lvgl_task_handle;
 void lvgl_task(void *pvParameters);
 
 #define ESP_STACK 1024
-#define ESP_PRIORITY 5
+#define ESP_PRIORITY 4
 TaskHandle_t esp_task_handle;
 void esp_task(void *pvParameters);
 
@@ -116,12 +117,12 @@ void start_task(void *pvParameters)
     //             (UBaseType_t)TASK3_PRIORITY,
     //             (TaskHandle_t *)&task3_handle);
 
-    // xTaskCreate((TaskFunction_t)lvgl_task,
-    //             (char *)"lvgl_task",
-    //             (configSTACK_DEPTH_TYPE)LVGL_STACK,
-    //             (void *)NULL,
-    //             (UBaseType_t)LVGL_PRIORITY,
-    //             (TaskHandle_t *)&lvgl_task_handle);
+    xTaskCreate((TaskFunction_t)lvgl_task,
+                (char *)"lvgl_task",
+                (configSTACK_DEPTH_TYPE)LVGL_STACK,
+                (void *)NULL,
+                (UBaseType_t)LVGL_PRIORITY,
+                (TaskHandle_t *)&lvgl_task_handle);
 
     xTaskCreate((TaskFunction_t)esp_task,
                 (char *)"esp_task",
@@ -130,8 +131,8 @@ void start_task(void *pvParameters)
                 (UBaseType_t)ESP_PRIORITY,
                 (TaskHandle_t *)&esp_task_handle);
 
-    vTaskDelete(NULL);
     taskEXIT_CRITICAL();
+    vTaskDelete(NULL);
 }
 
 void sensor_task(void *pvParameters)
@@ -197,13 +198,27 @@ void lvgl_task(void *pvParameters)
     lv_tick_set_cb(xTaskGetTickCount);
     lv_port_disp_init();
     lv_port_indev_init();
-    lv_obj_t *label = lv_label_create(lv_scr_act());
-    lv_label_set_text(label, "Hello FreeRTOS + LVGL");
-    lv_obj_center(label);
+    // uint32_t last_check = 0;
+    // lv_obj_t *label = lv_label_create(lv_scr_act());
+    // lv_label_set_text(label, "LVGL OK");
+    // lv_obj_set_style_text_color(label, lv_color_hex(0xFF0000), 0);
+    // lv_obj_center(label);
+
+    UI_Init();
+
     //  printf_uart("LVGL task is ok\n");
     while (1)
     {
         // printf_uart("LVGL task is running\n");
+        // if (xTaskGetTickCount() - last_check >= pdMS_TO_TICKS(5000))
+        // {
+        //     last_check = xTaskGetTickCount();
+        //     printf_uart("sensor:%u mqtt:%u lvgl:%u esp:%u\r\n",
+        //                 uxTaskGetStackHighWaterMark(sensor_task_handle),
+        //                 uxTaskGetStackHighWaterMark(mqtt_pub_task_handle),
+        //                 uxTaskGetStackHighWaterMark(NULL), // NULL = 当前任务
+        //                 uxTaskGetStackHighWaterMark(esp_task_handle));
+        // }
         lv_task_handler();
         vTaskDelay(5); // 5ms 刷新一次
     }

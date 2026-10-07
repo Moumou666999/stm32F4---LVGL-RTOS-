@@ -22,8 +22,7 @@
 #define __USART_H__
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -35,20 +34,20 @@ extern "C"
 #include <string.h>
 #include "FreeRTOS.h"
 #include "semphr.h"
-    /* USER CODE END Includes */
+/* USER CODE END Includes */
 
-    extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart1;
 
-    extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart2;
 
-    /* USER CODE BEGIN Private defines */
+/* USER CODE BEGIN Private defines */
 
-    /* USER CODE END Private defines */
+/* USER CODE END Private defines */
 
-    void MX_USART1_UART_Init(void);
-    void MX_USART2_UART_Init(void);
+void MX_USART1_UART_Init(void);
+void MX_USART2_UART_Init(void);
 
-    /* USER CODE BEGIN Prototypes */
+/* USER CODE BEGIN Prototypes */
     extern TaskHandle_t esp_task_handle;
 
     int printf_uart(const char *fmt, ...);
@@ -58,10 +57,11 @@ extern "C"
     uint16_t ESP_Uart_Read(uint8_t *buf, uint16_t buf_size);
     uint16_t Debug_Uart_Read(uint8_t *buf, uint16_t buf_size);
     uint8_t ESP_Uart_HasData(void);
-    /* USER CODE END Prototypes */
+/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __USART_H__ */
+
