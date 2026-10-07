@@ -41,7 +41,7 @@
 #include "task.h"
 #include "mq2.h"
 #include "freertos_demo.h"
-#define RX_BUFFER_SIZE 100
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -73,9 +73,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t rx_buffer[100];
-uint16_t size = 0;
-uint8_t Rxflag = 0;
 
 Sht30Data sht30_data;
 uint32_t system_time = 0; // ms
@@ -119,8 +116,9 @@ int main(void)
   MX_SPI1_Init();
   MX_SPI2_Init();
   MX_ADC1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
+  // HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buffer, RX_BUFFER_SIZE);
   HAL_TIM_Base_Start(&htim6);
 
   // lv_init();
@@ -133,11 +131,11 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  for (int i = 0; i < 10; i++)
-  {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    HAL_Delay(500);
-  }
+  // for (int i = 0; i < 10; i++)
+  // {
+  //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  //   HAL_Delay(500);
+  // }
   freertos_start();
   //  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
   while (1)
@@ -245,23 +243,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
-{
-  if (huart->Instance == USART1)
-  {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    if (Rxflag == 0)
-    {
-      Rxflag = 1; //
-      if (Size < RX_BUFFER_SIZE)
-      {
-        rx_buffer[Size] = '\0'; //
-        size = Size;            //
-      }
-    }
-    HAL_UARTEx_ReceiveToIdle_DMA(huart, rx_buffer, RX_BUFFER_SIZE); //
-  }
-}
 
 void vApplicationIdleHook(void)
 {

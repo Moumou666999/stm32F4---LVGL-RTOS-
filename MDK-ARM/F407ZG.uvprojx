@@ -430,6 +430,11 @@
               <FilePath>..\Core\Src\freertos_demo.c</FilePath>
             </File>
             <File>
+              <FileName>esp8266.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\esp8266.c</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/main.c</FilePath>
@@ -687,6 +692,11 @@
                   </Cads>
                 </FileArmAds>
               </FileOption>
+            </File>
+            <File>
+              <FileName>mqtt_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\mqtt_app.c</FilePath>
             </File>
           </Files>
         </Group>
