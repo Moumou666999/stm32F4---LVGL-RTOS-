@@ -9,7 +9,7 @@ void UI_Init(void);
 
 /* 数据更新接口（被 esp_task / sensor_task 调用） */
 void UI_UpdateSensor(float temp, float humi, float smoke);
-void UI_UpdateActuator(uint8_t led, uint8_t buzzer);
+void UI_UpdateActuator(uint8_t led, uint8_t fan, uint8_t buzzer);
 void UI_UpdateMode(uint8_t mode);
 void UI_UpdateNetwork(uint8_t wifi, uint8_t mqtt);
 

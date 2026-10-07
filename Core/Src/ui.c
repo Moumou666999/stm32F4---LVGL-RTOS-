@@ -2,7 +2,7 @@
 #include "usart.h"
 #include <stdio.h>
 #include <string.h>
-
+#include <math.h>
 /* ============ 主页控件句柄 ============ */
 static lv_obj_t *label_temp_val;
 static lv_obj_t *label_humi_val;
@@ -14,6 +14,7 @@ static lv_obj_t *label_mqtt_status;
 /* ============ 控制页控件句柄 ============ */
 static lv_obj_t *sw_led;
 static lv_obj_t *sw_buzzer;
+static lv_obj_t *sw_fan;
 static lv_obj_t *label_mode_ctrl;
 
 /* ============ 设置页控件句柄 ============ */
@@ -110,12 +111,13 @@ static lv_obj_t *create_control_row(lv_obj_t *parent, const char *name,
 static void create_control_page(lv_obj_t *parent)
 {
     create_control_row(parent, "LED", 20, &sw_led);
-    create_control_row(parent, "Buzzer", 70, &sw_buzzer);
+    create_control_row(parent, "Fan", 60, &sw_fan);
+    create_control_row(parent, "Buzzer", 100, &sw_buzzer);
 
     /* 模式显示 */
     label_mode_ctrl = lv_label_create(parent);
     lv_label_set_text(label_mode_ctrl, "Mode: Auto");
-    lv_obj_align(label_mode_ctrl, LV_ALIGN_TOP_LEFT, 10, 120);
+    lv_obj_align(label_mode_ctrl, LV_ALIGN_TOP_LEFT, 10, 150);
 }
 
 /* ============ 设置页 ============ */
@@ -193,13 +195,18 @@ void UI_UpdateSensor(float temp, float humi, float smoke)
     }
 }
 
-void UI_UpdateActuator(uint8_t led, uint8_t buzzer)
+void UI_UpdateActuator(uint8_t led, uint8_t fan, uint8_t buzzer)
 {
     /* 更新开关状态（LVGL v9：用 LV_STATE_CHECKED） */
     if (led)
         lv_obj_add_state(sw_led, LV_STATE_CHECKED);
     else
         lv_obj_clear_state(sw_led, LV_STATE_CHECKED);
+
+    if (fan)
+        lv_obj_add_state(sw_fan, LV_STATE_CHECKED);
+    else
+        lv_obj_clear_state(sw_fan, LV_STATE_CHECKED);
 
     if (buzzer)
         lv_obj_add_state(sw_buzzer, LV_STATE_CHECKED);

@@ -102,10 +102,14 @@ uint8_t ESP_Init(void) // 完整初始化：AT → 关回显
 {
     vTaskDelay(pdMS_TO_TICKS(2000)); // 等 ESP8266 上电稳定
 
-    // /*复位ESP8266 */
-    // at_send("AT+RESTORE\r\n");
-    // vTaskDelay(pdMS_TO_TICKS(6000)); // 等待复位完成
-    // ESP_Uart_clear();                // 清空接收缓冲，避免复位信息干扰后续判断
+    // // /*复位ESP8266 */
+    // HAL_UART_Transmit(&huart2, (uint8_t *)"AT+RST\r\n", 8, 500);
+
+    // /* 固定等 6 秒（保守值，覆盖大多数固件） */
+    // vTaskDelay(pdMS_TO_TICKS(6000));
+
+    // /* 清空复位期间的所有输出 */
+    // ESP_Uart_clear();
 
     /* 握手：确认 ESP 在线 */
     if (!ESP_SendCmd("AT\r\n", "OK", 2000))

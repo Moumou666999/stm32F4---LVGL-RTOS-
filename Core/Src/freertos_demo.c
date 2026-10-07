@@ -161,27 +161,65 @@ void sensor_task(void *pvParameters)
 
 void mqtt_pub_task(void *pvParameters)
 {
-    SysData_t sht;
+    SysData_t curr;
+    SysData_t last = {0};
     uint32_t last_sensor_report;
-    MQTT_Msg_t mqtt_pub;
+    MQTT_Msg_t msg;
+
+    if (xSemaphoreTake(g_mutex, portMAX_DELAY) == pdTRUE)
+    {
+        last = g_sys;
+        xSemaphoreGive(g_mutex);
+    }
 
     while (1)
     {
         if (xSemaphoreTake(g_mutex, portMAX_DELAY) == pdTRUE)
         {
-            sht = g_sys;
+            curr = g_sys;
             xSemaphoreGive(g_mutex);
         }
 
+        /*温度湿度定时上报*/
         if (xTaskGetTickCount() - last_sensor_report >= pdMS_TO_TICKS(5000))
         {
-            mqtt_pub.type = MQTT_MSG_SENSOR;
-            mqtt_pub.data.sensor.humi = sht.humi;
-            mqtt_pub.data.sensor.smoke = sht.smoke;
-            mqtt_pub.data.sensor.temp = sht.temp;
+            msg.type = MQTT_MSG_SENSOR;
+            msg.data.sensor.humi = curr.humi;
+            msg.data.sensor.smoke = curr.smoke;
+            msg.data.sensor.temp = curr.temp;
             last_sensor_report = xTaskGetTickCount();
-            xQueueSend(mqtt_pub_queue, &mqtt_pub, portMAX_DELAY);
+            xQueueSend(mqtt_pub_queue, &msg, portMAX_DELAY);
         }
+
+        if (curr.led != last.led ||
+            curr.fan != last.fan ||
+            curr.buzzer != last.buzzer)
+        {
+            printf_uart("[PUB] Actuator changed: led=%d fan=%d buzz=%d\r\n",
+                        curr.led, curr.fan, curr.buzzer); // ★ 加
+            msg.type = MQTT_MSG_ACTUATOR;
+            msg.data.actuator.led = curr.led;
+            msg.data.actuator.fan = curr.fan;
+            msg.data.actuator.buzzer = curr.buzzer;
+            xQueueSend(mqtt_pub_queue, &msg, 0);
+
+            /* 更新快照 */
+            last.led = curr.led;
+            last.fan = curr.fan;
+            last.buzzer = curr.buzzer;
+        }
+
+        /* ========== 变化上报：工作模式 ========== */
+        if (curr.mode != last.mode)
+        {
+            msg.type = MQTT_MSG_MODE;
+            msg.data.mode.mode = curr.mode;
+            xQueueSend(mqtt_pub_queue, &msg, 0);
+
+            last.mode = curr.mode;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -198,27 +236,23 @@ void lvgl_task(void *pvParameters)
     lv_tick_set_cb(xTaskGetTickCount);
     lv_port_disp_init();
     lv_port_indev_init();
-    // uint32_t last_check = 0;
-    // lv_obj_t *label = lv_label_create(lv_scr_act());
-    // lv_label_set_text(label, "LVGL OK");
-    // lv_obj_set_style_text_color(label, lv_color_hex(0xFF0000), 0);
-    // lv_obj_center(label);
 
     UI_Init();
 
-    //  printf_uart("LVGL task is ok\n");
+    SysData_t local;
     while (1)
     {
-        // printf_uart("LVGL task is running\n");
-        // if (xTaskGetTickCount() - last_check >= pdMS_TO_TICKS(5000))
-        // {
-        //     last_check = xTaskGetTickCount();
-        //     printf_uart("sensor:%u mqtt:%u lvgl:%u esp:%u\r\n",
-        //                 uxTaskGetStackHighWaterMark(sensor_task_handle),
-        //                 uxTaskGetStackHighWaterMark(mqtt_pub_task_handle),
-        //                 uxTaskGetStackHighWaterMark(NULL), // NULL = 当前任务
-        //                 uxTaskGetStackHighWaterMark(esp_task_handle));
-        // }
+
+        xSemaphoreTake(g_mutex, portMAX_DELAY);
+        local = g_sys;
+        xSemaphoreGive(g_mutex);
+
+        /* 更新 UI */
+        UI_UpdateSensor(local.temp, local.humi, local.smoke);
+        UI_UpdateActuator(local.led, local.fan, local.buzzer);
+        UI_UpdateMode(local.mode);
+        UI_UpdateNetwork(local.wifi_station, local.mqtt_station);
+
         lv_task_handler();
         vTaskDelay(5); // 5ms 刷新一次
     }
@@ -277,6 +311,11 @@ void esp_task(void *pvParameters)
                 rx_buf[len] = '\0';
                 printf_uart("URC: %s\r\n", rx_buf);
                 /* 后续解析 +MQTTSUBRECV */
+                if (strstr((char *)rx_buf, "+MQTTSUBRECV") != NULL &&
+                    strstr((char *)rx_buf, "property/set") != NULL)
+                {
+                    MQTT_ProcessCloudCmd((char *)rx_buf);
+                }
             }
         }
 

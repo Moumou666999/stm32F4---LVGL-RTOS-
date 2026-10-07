@@ -258,6 +258,7 @@ void vApplicationMallocFailedHook(void)
     ;
 }
 
+/*¶ÑÕ»Òç³öº¯Êý*/
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
   HAL_UART_Transmit(&huart1, (uint8_t *)"\r\n!!! STACK OVERFLOW !!!\r\n", 26, 100);
